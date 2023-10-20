@@ -28,6 +28,16 @@ fn main() {
                     process::exit(1);
                 }
             }
+            "w" => {
+                let bool = input_line
+                    .chars()
+                    .fold(false, |acc, c| acc || c.is_digit(10) || c.is_alphabetic());
+                if bool {
+                    process::exit(0);
+                } else {
+                    process::exit(1);
+                }
+            }
             _ => unimplemented!(),
         }
     } else {
