@@ -14,7 +14,6 @@ fn main() {
 
     let pattern = env::args().nth(2).unwrap();
     let mut input_line = String::new();
-
     io::stdin().read_line(&mut input_line).unwrap();
 
     if input_line.contains(&pattern) {
