@@ -28,12 +28,14 @@ fn main() {
                     process::exit(1);
                 }
             }
-            _ => {
-                if input_line.contains(&pattern) {
-                    process::exit(0);
-                } else {
-                    process::exit(1);
-                }
+            _ => unimplemented!(),
+        }
+    } else {
+        {
+            if input_line.contains(&pattern) {
+                process::exit(0);
+            } else {
+                process::exit(1);
             }
         }
     }
