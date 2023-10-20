@@ -16,9 +16,25 @@ fn main() {
     let mut input_line = String::new();
     io::stdin().read_line(&mut input_line).unwrap();
 
-    if input_line.contains(&pattern) {
-        process::exit(0);
-    } else {
-        process::exit(1);
+    if let Some(s) = pattern.strip_prefix('\\') {
+        match s {
+            "d" => {
+                let bool = input_line
+                    .chars()
+                    .fold(false, |acc, c| acc || c.is_digit(10));
+                if bool {
+                    process::exit(0);
+                } else {
+                    process::exit(1);
+                }
+            }
+            _ => {
+                if input_line.contains(&pattern) {
+                    process::exit(0);
+                } else {
+                    process::exit(1);
+                }
+            }
+        }
     }
 }
