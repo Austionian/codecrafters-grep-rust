@@ -8,20 +8,30 @@ fn reg_match<'a>(
 ) -> (bool, Option<&'a str>, Option<&'a str>) {
     if let Some(s) = pattern.strip_prefix('\\') {
         match s.chars().next() {
-            Some('d') => (
-                input_line
-                    .chars()
-                    .fold(false, |acc, c| acc || c.is_digit(10)),
-                pattern.get(2..),
-                input_line.get(1..),
-            ),
-            Some('w') => (
-                input_line
-                    .chars()
-                    .fold(false, |acc, c| acc || c.is_digit(10) || c.is_alphabetic()),
-                pattern.get(2..),
-                input_line.get(1..),
-            ),
+            Some('d') => {
+                let mut matched = false;
+                let mut idx = 0;
+                for (i, c) in input_line.chars().enumerate() {
+                    if c.is_digit(10) {
+                        idx = i;
+                        matched = true;
+                        break;
+                    }
+                }
+                (matched, pattern.get(2..), input_line.get(idx + 1..))
+            }
+            Some('w') => {
+                let mut matched = false;
+                let mut idx = 0;
+                for (i, c) in input_line.chars().enumerate() {
+                    if c.is_digit(10) || c.is_alphabetic() {
+                        idx = i;
+                        matched = true;
+                        break;
+                    }
+                }
+                (matched, pattern.get(2..), input_line.get(idx + 1..))
+            }
             _ => unimplemented!("{}", s),
         }
     } else {
@@ -84,13 +94,16 @@ fn main() {
     let mut i = input_line.as_str();
     while !p.is_empty() && !i.is_empty() {
         let (bool, rest_pattern, rest_input) = reg_match(p, i);
+        println!("{}, {:?}, {:?}", bool, rest_pattern, rest_input);
         res = res && bool;
         p = rest_pattern.unwrap_or("");
         i = rest_input.unwrap_or("");
     }
     if res {
+        println!("pass");
         process::exit(0);
     } else {
+        println!("fail");
         process::exit(1);
     }
 }
