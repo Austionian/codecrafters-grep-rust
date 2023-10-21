@@ -2,7 +2,70 @@ use std::env;
 use std::io;
 use std::process;
 
-// Usage: echo <input_text> | your_grep.sh -E <pattern>
+fn reg_match<'a>(
+    pattern: &'a str,
+    input_line: &'a str,
+) -> (bool, Option<&'a str>, Option<&'a str>) {
+    if let Some(s) = pattern.strip_prefix('\\') {
+        match s.chars().next() {
+            Some('d') => (
+                input_line
+                    .chars()
+                    .fold(false, |acc, c| acc || c.is_digit(10)),
+                pattern.get(2..),
+                input_line.get(1..),
+            ),
+            Some('w') => (
+                input_line
+                    .chars()
+                    .fold(false, |acc, c| acc || c.is_digit(10) || c.is_alphabetic()),
+                pattern.get(2..),
+                input_line.get(1..),
+            ),
+            _ => unimplemented!("{}", s),
+        }
+    } else {
+        if pattern.chars().next() == Some('[') {
+            let pattern = pattern
+                .strip_prefix('[')
+                .and_then(|rest| rest.strip_suffix(']'))
+                .unwrap();
+
+            if pattern.chars().next() == Some('^') {
+                let pattern = pattern.strip_prefix('^').unwrap();
+                for c in pattern.chars() {
+                    if input_line.contains(c) {
+                        return (false, pattern.get(pattern.len() + 3..), input_line.get(1..));
+                    } else {
+                        return (true, pattern.get(pattern.len() + 3..), input_line.get(1..));
+                    }
+                }
+            }
+
+            for c in pattern.chars() {
+                if input_line.contains(c) {
+                    return (true, pattern.get(pattern.len() + 2..), input_line.get(1..));
+                } else {
+                    return (false, pattern.get(pattern.len() + 2..), input_line.get(1..));
+                }
+            }
+        }
+        if input_line.contains(&pattern) {
+            return (
+                true,
+                pattern.get(pattern.len()..),
+                input_line.get(pattern.len()..),
+            );
+        } else {
+            return (
+                false,
+                pattern.get(pattern.len()..),
+                input_line.get(pattern.len()..),
+            );
+        }
+    }
+}
+
 fn main() {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
     println!("Logs from your program will appear here!");
@@ -16,60 +79,21 @@ fn main() {
     let mut input_line = String::new();
     io::stdin().read_line(&mut input_line).unwrap();
 
-    if let Some(s) = pattern.strip_prefix('\\') {
-        match s {
-            "d" => {
-                let bool = input_line
-                    .chars()
-                    .fold(false, |acc, c| acc || c.is_digit(10));
-                if bool {
-                    process::exit(0);
-                } else {
-                    process::exit(1);
-                }
-            }
-            "w" => {
-                let bool = input_line
-                    .chars()
-                    .fold(false, |acc, c| acc || c.is_digit(10) || c.is_alphabetic());
-                if bool {
-                    process::exit(0);
-                } else {
-                    process::exit(1);
-                }
-            }
-            _ => unimplemented!(),
-        }
+    let mut res = true;
+    let mut p = pattern.as_str();
+    let mut i = input_line.as_str();
+    while !p.is_empty() && !i.is_empty() {
+        let (bool, rest_pattern, rest_input) = reg_match(p, i);
+        println!("{}, {:?}, {:?}", bool, rest_pattern, rest_input);
+        res = res && bool;
+        p = rest_pattern.unwrap_or("");
+        i = rest_input.unwrap_or("");
+    }
+    if res {
+        println!("pass");
+        process::exit(0);
     } else {
-        if pattern.chars().next() == Some('[') {
-            let pattern = pattern
-                .strip_prefix('[')
-                .and_then(|rest| rest.strip_suffix(']'))
-                .unwrap();
-
-            if pattern.chars().next() == Some('^') {
-                let pattern = pattern.strip_prefix('^').unwrap();
-                for c in pattern.chars() {
-                    if input_line.contains(c) {
-                        process::exit(1);
-                    } else {
-                        process::exit(0);
-                    }
-                }
-            }
-
-            for c in pattern.chars() {
-                if input_line.contains(c) {
-                    process::exit(0);
-                } else {
-                    process::exit(1);
-                }
-            }
-        }
-        if input_line.contains(&pattern) {
-            process::exit(0);
-        } else {
-            process::exit(1);
-        }
+        println!("fail");
+        process::exit(1);
     }
 }
