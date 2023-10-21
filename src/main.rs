@@ -94,16 +94,13 @@ fn main() {
     let mut i = input_line.as_str();
     while !p.is_empty() && !i.is_empty() {
         let (bool, rest_pattern, rest_input) = reg_match(p, i);
-        println!("{}, {:?}, {:?}", bool, rest_pattern, rest_input);
         res = res && bool;
         p = rest_pattern.unwrap_or("");
         i = rest_input.unwrap_or("");
     }
     if res {
-        println!("pass");
         process::exit(0);
     } else {
-        println!("fail");
         process::exit(1);
     }
 }
