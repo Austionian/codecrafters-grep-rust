@@ -120,9 +120,11 @@ fn main() {
         let (bool, rest_pattern, rest_input) = reg_match(p, i);
         println!("{}, {:?}, {:?}", bool, rest_pattern, rest_input);
         res = res && bool;
-        println!("{res}");
         p = rest_pattern.unwrap_or("");
         i = rest_input.unwrap_or("");
+        if (i.is_empty() && !p.is_empty()) {
+            res = false;
+        }
     }
     if res {
         println!("pass");
