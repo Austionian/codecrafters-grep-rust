@@ -74,6 +74,16 @@ fn reg_match<'a>(
                 }
             }
         }
+        // Pattern has special chars later on
+        if pattern.contains('\\') {
+            let idx = pattern.chars().position(|c| c == '\\').unwrap();
+            let (character_pattern, rest) = pattern.split_at(idx);
+            if input_line.starts_with(character_pattern) {
+                return (true, Some(rest), input_line.get(character_pattern.len()..));
+            } else {
+                return (false, Some(rest), input_line.get(character_pattern.len()..));
+            }
+        }
         if input_line.contains(&pattern) {
             return (
                 true,
@@ -108,11 +118,13 @@ fn main() {
     let mut i = input_line.as_str();
     while !p.is_empty() && !i.is_empty() {
         let (bool, rest_pattern, rest_input) = reg_match(p, i);
+        println!("{}, {:?}, {:?}", bool, rest_pattern, rest_input);
         res = res && bool;
         p = rest_pattern.unwrap_or("");
         i = rest_input.unwrap_or("");
     }
     if res {
+        println!("pass");
         process::exit(0);
     } else {
         process::exit(1);
