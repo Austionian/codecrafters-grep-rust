@@ -32,7 +32,21 @@ fn reg_match<'a>(
                 }
                 (matched, pattern.get(2..), input_line.get(idx + 1..))
             }
-            _ => unimplemented!("{}", s),
+            _ => {
+                if input_line.contains(&pattern) {
+                    return (
+                        true,
+                        pattern.get(pattern.len()..),
+                        input_line.get(pattern.len()..),
+                    );
+                } else {
+                    return (
+                        false,
+                        pattern.get(pattern.len()..),
+                        input_line.get(pattern.len()..),
+                    );
+                }
+            }
         }
     } else {
         if pattern.chars().next() == Some('[') {
