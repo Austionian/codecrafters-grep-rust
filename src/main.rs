@@ -41,12 +41,24 @@ fn main() {
             _ => unimplemented!(),
         }
     } else {
-        {
-            if input_line.contains(&pattern) {
-                process::exit(0);
-            } else {
-                process::exit(1);
+        if pattern.chars().next() == Some('[') {
+            let pattern = pattern
+                .strip_prefix('[')
+                .and_then(|rest| rest.strip_suffix(']'))
+                .unwrap();
+
+            for c in pattern.chars() {
+                if input_line.contains(c) {
+                    process::exit(0);
+                } else {
+                    process::exit(1);
+                }
             }
+        }
+        if input_line.contains(&pattern) {
+            process::exit(0);
+        } else {
+            process::exit(1);
         }
     }
 }
