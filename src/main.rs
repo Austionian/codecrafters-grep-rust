@@ -47,6 +47,17 @@ fn main() {
                 .and_then(|rest| rest.strip_suffix(']'))
                 .unwrap();
 
+            if pattern.chars().next() == Some('^') {
+                let pattern = pattern.strip_prefix('^').unwrap();
+                for c in pattern.chars() {
+                    if input_line.contains(c) {
+                        process::exit(1);
+                    } else {
+                        process::exit(0);
+                    }
+                }
+            }
+
             for c in pattern.chars() {
                 if input_line.contains(c) {
                     process::exit(0);
