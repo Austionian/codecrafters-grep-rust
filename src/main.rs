@@ -2,6 +2,47 @@ use std::env;
 use std::io;
 use std::process;
 
+fn string_match<'a>(
+    pattern: &'a str,
+    input_line: &'a str,
+) -> (bool, Option<&'a str>, Option<&'a str>, Option<usize>) {
+    let end_condition = pattern.split_at(pattern.len() - 1).1 == "$";
+    if end_condition {
+        let pattern = pattern.split_at(pattern.len() - 1).0;
+        if input_line.contains(&pattern) {
+            return (
+                true,
+                pattern.get(pattern.len()..),
+                input_line.get(pattern.len()..),
+                input_line.starts_with(pattern).then(|| 0),
+            );
+        } else {
+            return (
+                false,
+                pattern.get(pattern.len()..),
+                input_line.get(pattern.len()..),
+                None,
+            );
+        }
+    } else {
+        if input_line.contains(&pattern) {
+            return (
+                true,
+                pattern.get(pattern.len()..),
+                input_line.get(pattern.len()..),
+                input_line.starts_with(pattern).then(|| 0),
+            );
+        } else {
+            return (
+                false,
+                pattern.get(pattern.len()..),
+                input_line.get(pattern.len()..),
+                None,
+            );
+        }
+    }
+}
+
 fn reg_match<'a>(
     pattern: &'a str,
     input_line: &'a str,
@@ -42,23 +83,7 @@ fn reg_match<'a>(
                     Some(idx),
                 )
             }
-            _ => {
-                if input_line.contains(&pattern) {
-                    return (
-                        true,
-                        pattern.get(pattern.len()..),
-                        input_line.get(pattern.len()..),
-                        input_line.starts_with(pattern).then(|| 0),
-                    );
-                } else {
-                    return (
-                        false,
-                        pattern.get(pattern.len()..),
-                        input_line.get(pattern.len()..),
-                        None,
-                    );
-                }
-            }
+            _ => string_match(pattern, input_line),
         }
     } else {
         if pattern.chars().next() == Some('[') {
@@ -136,21 +161,7 @@ fn reg_match<'a>(
                 );
             }
         }
-        if input_line.contains(&pattern) {
-            return (
-                true,
-                pattern.get(pattern.len()..),
-                input_line.get(pattern.len()..),
-                input_line.starts_with(pattern).then(|| 0),
-            );
-        } else {
-            return (
-                false,
-                pattern.get(pattern.len()..),
-                input_line.get(pattern.len()..),
-                None,
-            );
-        }
+        string_match(pattern, input_line)
     }
 }
 
@@ -180,8 +191,10 @@ fn main() {
         }
     }
     if res {
+        println!("pass");
         process::exit(0);
     } else {
+        println!("fail");
         process::exit(1);
     }
 }
