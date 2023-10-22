@@ -9,10 +9,18 @@ fn string_match<'a>(
     let end_condition = pattern.split_at(pattern.len() - 1).1 == "$";
     if end_condition {
         let pattern = pattern.split_at(pattern.len() - 1).0;
-        if input_line.contains(&pattern) {
+        if input_line.contains(pattern) {
+            if !input_line.split_once(pattern).unwrap().1.is_empty() {
+                return (
+                    false,
+                    pattern.get(pattern.len()..),
+                    input_line.get(pattern.len()..),
+                    None,
+                );
+            }
             return (
                 true,
-                pattern.get(pattern.len()..),
+                Some(""),
                 input_line.get(pattern.len()..),
                 input_line.starts_with(pattern).then(|| 0),
             );
