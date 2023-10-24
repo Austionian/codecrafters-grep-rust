@@ -135,7 +135,7 @@ fn reg_match<'a>(pattern: &MatchType, input_line: &'a str) -> (bool, Option<&'a 
             }
             return (false, None);
         }
-        MatchType::Str(p, Varient::Start) => (input_line.starts_with(p), input_line.get(p.len()..)),
+        MatchType::Str(p, Varient::Start) => (input_line.starts_with(p), input_line.get(1..)),
         MatchType::Str(p, Varient::None) => {
             if input_line.contains(p) {
                 return (true, Some(input_line.split_once(p).unwrap().1));
@@ -155,24 +155,17 @@ fn reg_match<'a>(pattern: &MatchType, input_line: &'a str) -> (bool, Option<&'a 
             return (false, None);
         }
         MatchType::Str(p, Varient::Plus) | MatchType::Str(p, Varient::PlusConfined) => {
-            let mut res = false;
-            let mut i = 0;
-            let mut x = input_line;
-            loop {
-                if x.contains(p) {
-                    res = true;
-                    let tmp = x.split_once(p).unwrap();
-                    if i == 0 {
-                        x = tmp.1;
-                        i += 1;
-                    } else {
-                        x = tmp.0;
+            if input_line.contains(p) {
+                let x = input_line.split_once(p).unwrap();
+                for (i, c) in x.1.chars().enumerate() {
+                    if &c.to_string().as_str() == p {
+                        continue;
                     }
-                } else {
-                    break;
+                    return (true, input_line.get(i..));
                 }
+                return (true, None);
             }
-            return (res, Some(x));
+            return (false, None);
         }
         _ => unimplemented!(),
     }

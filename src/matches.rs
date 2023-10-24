@@ -116,34 +116,19 @@ pub(crate) fn get_match_type<'a>(pattern: &'a str) -> Option<(MatchType, Option<
         };
     }
 
-    let mut special_chars: Vec<usize> = Vec::new();
-    special_chars.push(pattern.chars().position(|c| c == '\\').unwrap_or(0));
-    special_chars.push(pattern.chars().position(|c| c == '[').unwrap_or(0));
-    special_chars.push(pattern.chars().position(|c| c == '+').unwrap_or(0));
-
-    special_chars.sort();
-
-    if *special_chars.last().unwrap_or(&0_usize) != 0_usize {
-        let (pattern, rest) = pattern.split_at(*special_chars.last().unwrap());
-        if rest.chars().next().unwrap() == '+' {
-            return Some((
-                MatchType::Str(pattern, Varient::PlusConfined),
-                rest.get(1..),
-            ));
-        }
-        return Some((MatchType::Str(pattern, varient), Some(rest)));
-    } else if pattern.chars().last().unwrap() == '$' {
+    if pattern.get(1..2).unwrap_or("") == "+" {
         return Some((
-            MatchType::Str(&pattern[..pattern.len() - 1], Varient::End),
-            None,
-        ));
-    } else if pattern.chars().last().unwrap() == '+' {
-        return Some((
-            MatchType::Str(&pattern[..pattern.len() - 1], Varient::Plus),
-            None,
+            MatchType::Str(&pattern[0..1], Varient::Plus),
+            pattern.get(2..),
         ));
     }
-    return Some((MatchType::Str(pattern, varient), None));
+    if pattern.get(1..2).unwrap_or("") == "$" {
+        return Some((
+            MatchType::Str(&pattern[0..1], Varient::End),
+            pattern.get(2..),
+        ));
+    }
+    return Some((MatchType::Str(&pattern[0..1], varient), pattern.get(1..)));
 }
 
 #[cfg(test)]
