@@ -151,6 +151,19 @@ fn reg_match<'a>(pattern: &MatchType, input_line: &'a str) -> (bool, Option<&'a 
             }
             return (false, None);
         }
+        MatchType::Str(p, Varient::Question) => {
+            if input_line.contains(p) {
+                let x = input_line.split_once(p).unwrap();
+                for (i, c) in x.1.chars().enumerate() {
+                    if &c.to_string().as_str() == p {
+                        continue;
+                    }
+                    return (true, input_line.get(i..));
+                }
+                return (true, None);
+            }
+            return (true, Some(input_line));
+        }
         _ => unimplemented!(),
     }
 }

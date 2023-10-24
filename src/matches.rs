@@ -4,6 +4,7 @@ pub(crate) enum Varient {
     End,
     None,
     Plus,
+    Question,
 }
 
 #[derive(Debug, PartialEq)]
@@ -120,6 +121,12 @@ pub(crate) fn get_match_type<'a>(pattern: &'a str) -> Option<(MatchType, Option<
     if pattern.get(1..2).unwrap_or("") == "$" {
         return Some((
             MatchType::Str(&pattern[0..1], Varient::End),
+            pattern.get(2..),
+        ));
+    }
+    if pattern.get(1..2).unwrap_or("") == "?" {
+        return Some((
+            MatchType::Str(&pattern[0..1], Varient::Question),
             pattern.get(2..),
         ));
     }
