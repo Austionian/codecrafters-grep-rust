@@ -1,5 +1,10 @@
+use crate::check::reg_match;
+
+#[derive(Debug)]
+pub struct MatchQueue<'a>(pub Vec<MatchType<'a>>);
+
 #[derive(Debug, PartialEq)]
-pub(crate) enum Varient {
+pub enum Varient {
     Start,
     End,
     None,
@@ -8,7 +13,7 @@ pub(crate) enum Varient {
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) enum MatchType<'a> {
+pub enum MatchType<'a> {
     Str(&'a str, Varient),
     Digit(Varient),
     Word(Varient),
@@ -21,25 +26,34 @@ pub(crate) enum MatchType<'a> {
     Alternation(&'a str, &'a str, Varient),
 }
 
-// impl MatchType<'_> {
-//     pub fn is_end_varient(&self) -> bool {
-//         match self {
-//             self::MatchType::Str(_, Varient::End) => true,
-//             self::MatchType::Word(Varient::End) => true,
-//             self::MatchType::Digit(Varient::End) => true,
-//             self::MatchType::Set {
-//                 pattern: _,
-//                 negated: _,
-//                 varient: Varient::End,
-//             } => true,
-//             _ => false,
-//         }
-//     }
-//
-// pub fn peek(&self) -> String {
-//     todo!()
-// }
-// }
+impl<'a> MatchQueue<'a> {
+    pub fn from(pattern: &'a str) -> Self {
+        let mut p = pattern;
+        let mut match_queue = Vec::new();
+        while let Some((m, p_rest)) = get_match_type(p) {
+            match_queue.push(m);
+            p = p_rest.unwrap_or("");
+        }
+        MatchQueue(match_queue)
+    }
+
+    pub fn check(&self, input: &'a str) -> bool {
+        let mut res = true;
+        let mut i = input.trim_end();
+        for mtch in &self.0 {
+            let (bool, rest_input) = reg_match(&mtch, i);
+            res = res && bool;
+            i = rest_input.unwrap_or("");
+            if i == "" {
+                if mtch != self.0.last().unwrap() {
+                    res = false;
+                }
+                break;
+            }
+        }
+        res
+    }
+}
 
 // Returns the pattern, the remaining pattern and its length
 pub(crate) fn get_match_type<'a>(pattern: &'a str) -> Option<(MatchType, Option<&'a str>)> {
@@ -223,15 +237,15 @@ mod tests {
     #[test]
     fn varient() {
         let res = get_match_type(r"^abc").unwrap();
-        assert_eq!(res.0, MatchType::Str("abc", Varient::Start));
-        assert_eq!(res.1, None);
+        assert_eq!(res.0, MatchType::Str("a", Varient::Start));
+        assert_eq!(res.1, Some("bc"));
     }
 
     #[test]
     fn varient_end() {
-        let res = get_match_type(r"abc$").unwrap();
-        assert_eq!(res.0, MatchType::Str("abc", Varient::End));
-        assert_eq!(res.1, None);
+        let res = get_match_type(r"a$").unwrap();
+        assert_eq!(res.0, MatchType::Str("a", Varient::End));
+        assert_eq!(res.1, Some(""));
     }
 
     #[test]
@@ -256,8 +270,8 @@ mod tests {
     #[test]
     fn string_it() {
         let res = get_match_type(r"abc\d").unwrap();
-        assert_eq!(res.0, MatchType::Str("abc", Varient::None));
-        assert_eq!(res.1, Some(r"\d"));
+        assert_eq!(res.0, MatchType::Str("a", Varient::None));
+        assert_eq!(res.1, Some(r"bc\d"));
     }
 
     #[test]
@@ -270,7 +284,15 @@ mod tests {
     #[test]
     fn extra_tricky() {
         let (m, r) = get_match_type(r"^abc\d[^abc]").unwrap();
-        assert_eq!(m, MatchType::Str("abc", Varient::Start));
+        assert_eq!(m, MatchType::Str("a", Varient::Start));
+        assert_eq!(r, Some(r"bc\d[^abc]"));
+
+        let (m, r) = get_match_type(r.unwrap()).unwrap();
+        assert_eq!(m, MatchType::Str("b", Varient::None));
+        assert_eq!(r, Some(r"c\d[^abc]"));
+
+        let (m, r) = get_match_type(r.unwrap()).unwrap();
+        assert_eq!(m, MatchType::Str("c", Varient::None));
         assert_eq!(r, Some(r"\d[^abc]"));
 
         let (m, r) = get_match_type(r.unwrap()).unwrap();
