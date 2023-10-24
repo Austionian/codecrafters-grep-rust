@@ -18,6 +18,7 @@ pub(crate) enum MatchType<'a> {
         varient: Varient,
     },
     Any,
+    Alternation(&'a str, &'a str, Varient),
 }
 
 // impl MatchType<'_> {
@@ -80,6 +81,22 @@ pub(crate) fn get_match_type<'a>(pattern: &'a str) -> Option<(MatchType, Option<
             )),
         };
     };
+
+    if let Some(s) = pattern.strip_prefix(r"(") {
+        let alternation = s.split_once(r")");
+        return match alternation {
+            Some((pattern, rest)) => {
+                if let Some(s) = pattern.split_once(r"|") {
+                    return Some((MatchType::Alternation(s.0, s.1, varient), Some(rest)));
+                } else {
+                    // Invalid alternation type without the pipe.
+                    return Some((MatchType::Str(&pattern[..1], varient), Some(&pattern[1..])));
+                }
+            }
+            // Invalid alternation type without the closing paren.
+            None => Some((MatchType::Str(&pattern[..1], varient), Some(&pattern[1..]))),
+        };
+    }
 
     if let Some(s) = pattern.strip_prefix('[') {
         let set_tuple = s.split_once(']');

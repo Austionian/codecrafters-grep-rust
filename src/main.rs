@@ -164,6 +164,24 @@ fn reg_match<'a>(pattern: &MatchType, input_line: &'a str) -> (bool, Option<&'a 
             }
             return (true, Some(input_line));
         }
+        MatchType::Alternation(first, second, Varient::Start) => {
+            if input_line.starts_with(first) {
+                return (true, input_line.get(first.len()..));
+            }
+            if input_line.starts_with(second) {
+                return (true, input_line.get(second.len()..));
+            }
+            return (false, None);
+        }
+        MatchType::Alternation(first, second, Varient::None) => {
+            if input_line.contains(first) {
+                return (true, Some(input_line.split_once(first).unwrap().1));
+            }
+            if input_line.contains(second) {
+                return (true, Some(input_line.split_once(second).unwrap().1));
+            }
+            return (false, None);
+        }
         MatchType::Any => return (true, input_line.get(1..)),
         _ => unimplemented!(),
     }
