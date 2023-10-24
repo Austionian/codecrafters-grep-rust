@@ -4,15 +4,6 @@ use crate::check::reg_match;
 pub struct MatchQueue<'a>(pub Vec<MatchType<'a>>);
 
 #[derive(Debug, PartialEq)]
-pub enum Varient {
-    Start,
-    End,
-    None,
-    Plus,
-    Question,
-}
-
-#[derive(Debug, PartialEq)]
 pub enum MatchType<'a> {
     Str(&'a str, Varient),
     Digit(Varient),
@@ -24,6 +15,15 @@ pub enum MatchType<'a> {
     },
     Any,
     Alternation(&'a str, &'a str, Varient),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Varient {
+    Start,
+    End,
+    None,
+    Plus,
+    Question,
 }
 
 impl<'a> MatchQueue<'a> {
@@ -56,7 +56,7 @@ impl<'a> MatchQueue<'a> {
 }
 
 // Returns the pattern, the remaining pattern and its length
-pub(crate) fn get_match_type<'a>(pattern: &'a str) -> Option<(MatchType, Option<&'a str>)> {
+fn get_match_type<'a>(pattern: &'a str) -> Option<(MatchType, Option<&'a str>)> {
     if pattern.is_empty() {
         return None;
     }
@@ -74,14 +74,19 @@ pub(crate) fn get_match_type<'a>(pattern: &'a str) -> Option<(MatchType, Option<
         pattern
     };
 
-    let mut i = 2;
+    // Checks for word or digit.
     if let Some(s) = pattern.strip_prefix(r"\") {
+        let mut i = 2;
         if s.get(1..2).unwrap_or("") == "$" {
             varient = Varient::End;
             i += 1;
         }
         if s.get(1..2).unwrap_or("") == "+" {
             varient = Varient::Plus;
+            i += 1;
+        }
+        if s.get(1..2).unwrap_or("") == "?" {
+            varient = Varient::Question;
             i += 1;
         }
         return match s.chars().next() {
@@ -96,6 +101,7 @@ pub(crate) fn get_match_type<'a>(pattern: &'a str) -> Option<(MatchType, Option<
         };
     };
 
+    // Checks for alternation.
     if let Some(s) = pattern.strip_prefix(r"(") {
         let alternation = s.split_once(r")");
         return match alternation {
@@ -112,6 +118,7 @@ pub(crate) fn get_match_type<'a>(pattern: &'a str) -> Option<(MatchType, Option<
         };
     }
 
+    // Checks for set.
     if let Some(s) = pattern.strip_prefix('[') {
         let set_tuple = s.split_once(']');
 
@@ -124,6 +131,9 @@ pub(crate) fn get_match_type<'a>(pattern: &'a str) -> Option<(MatchType, Option<
                 }
                 if rest.chars().next().unwrap_or('a') == '+' {
                     varient = Varient::Plus;
+                }
+                if rest.chars().next().unwrap_or('a') == '?' {
+                    varient = Varient::Question;
                 }
                 if pattern.chars().next() == Some('^') {
                     return Some((
@@ -148,6 +158,7 @@ pub(crate) fn get_match_type<'a>(pattern: &'a str) -> Option<(MatchType, Option<
         };
     }
 
+    // If not above, must be a exact string match.
     if pattern.get(1..2).unwrap_or("") == "+" {
         return Some((
             MatchType::Str(&pattern[0..1], Varient::Plus),
