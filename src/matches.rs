@@ -116,24 +116,21 @@ pub(crate) fn get_match_type<'a>(pattern: &'a str) -> Option<(MatchType, Option<
         };
     }
 
-    let back_slash_idx = pattern.chars().position(|c| c == '\\').unwrap_or(0);
-    let set_idx = pattern.chars().position(|c| c == '[').unwrap_or(0);
-    let mut end_of_pattern = 0;
+    let mut special_chars: Vec<usize> = Vec::new();
+    special_chars.push(pattern.chars().position(|c| c == '\\').unwrap_or(0));
+    special_chars.push(pattern.chars().position(|c| c == '[').unwrap_or(0));
+    special_chars.push(pattern.chars().position(|c| c == '+').unwrap_or(0));
 
-    if back_slash_idx != 0 && set_idx != 0 {
-        if back_slash_idx < set_idx {
-            end_of_pattern = back_slash_idx;
-        } else {
-            end_of_pattern = set_idx;
+    special_chars.sort();
+
+    if *special_chars.last().unwrap_or(&0_usize) != 0_usize {
+        let (pattern, rest) = pattern.split_at(*special_chars.last().unwrap());
+        if rest.chars().next().unwrap() == '+' {
+            return Some((
+                MatchType::Str(pattern, Varient::PlusConfined),
+                rest.get(1..),
+            ));
         }
-    } else if back_slash_idx != 0 {
-        end_of_pattern = back_slash_idx;
-    } else if set_idx != 0 {
-        end_of_pattern = set_idx;
-    }
-
-    if end_of_pattern != 0 {
-        let (pattern, rest) = pattern.split_at(end_of_pattern);
         return Some((MatchType::Str(pattern, varient), Some(rest)));
     } else if pattern.chars().last().unwrap() == '$' {
         return Some((

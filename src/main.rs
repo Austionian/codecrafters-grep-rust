@@ -154,7 +154,7 @@ fn reg_match<'a>(pattern: &MatchType, input_line: &'a str) -> (bool, Option<&'a 
             }
             return (false, None);
         }
-        MatchType::Str(p, Varient::Plus) => {
+        MatchType::Str(p, Varient::Plus) | MatchType::Str(p, Varient::PlusConfined) => {
             let mut res = false;
             let mut i = 0;
             let mut x = input_line;
