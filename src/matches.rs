@@ -19,25 +19,25 @@ pub(crate) enum MatchType<'a> {
     },
 }
 
-impl MatchType<'_> {
-    pub fn is_end_varient(&self) -> bool {
-        match self {
-            self::MatchType::Str(_, Varient::End) => true,
-            self::MatchType::Word(Varient::End) => true,
-            self::MatchType::Digit(Varient::End) => true,
-            self::MatchType::Set {
-                pattern: _,
-                negated: _,
-                varient: Varient::End,
-            } => true,
-            _ => false,
-        }
-    }
-
-    // pub fn peek(&self) -> String {
-    //     todo!()
-    // }
-}
+// impl MatchType<'_> {
+//     pub fn is_end_varient(&self) -> bool {
+//         match self {
+//             self::MatchType::Str(_, Varient::End) => true,
+//             self::MatchType::Word(Varient::End) => true,
+//             self::MatchType::Digit(Varient::End) => true,
+//             self::MatchType::Set {
+//                 pattern: _,
+//                 negated: _,
+//                 varient: Varient::End,
+//             } => true,
+//             _ => false,
+//         }
+//     }
+//
+// pub fn peek(&self) -> String {
+//     todo!()
+// }
+// }
 
 // Returns the pattern, the remaining pattern and its length
 pub(crate) fn get_match_type<'a>(pattern: &'a str) -> Option<(MatchType, Option<&'a str>)> {

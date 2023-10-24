@@ -200,12 +200,14 @@ fn main() {
         match_queue.push(m);
         p = p_rest.unwrap_or("");
     }
-    for mtch in match_queue {
+    for mtch in &match_queue {
         let (bool, rest_input) = reg_match(&mtch, i);
-        println!("{} {:?}", bool, rest_input);
         res = res && bool;
         i = rest_input.unwrap_or("");
         if i == "" {
+            if mtch != match_queue.last().unwrap() {
+                res = false;
+            }
             break;
         }
     }
@@ -221,9 +223,6 @@ fn main() {
     //         break;
     //     }
     // }
-    if i.is_empty() && !p.is_empty() {
-        res = false;
-    }
     if res {
         println!("pass");
         process::exit(0);
