@@ -39,22 +39,6 @@ fn reg_match<'a>(pattern: &MatchType, input_line: &'a str) -> (bool, Option<&'a 
             }
             return (false, None);
         }
-        MatchType::Word(Varient::PlusConfined) => {
-            let mut res = false;
-            for (i, c) in input_line.chars().enumerate() {
-                if c.is_alphanumeric() {
-                    res = true;
-                } else {
-                    if res {
-                        return (true, input_line.get(i - 1..));
-                    }
-                }
-            }
-            if res {
-                return (true, None);
-            }
-            return (false, None);
-        }
         MatchType::Digit(Varient::Start) => (
             input_line.chars().next().unwrap().is_digit(10),
             input_line.get(1..),
@@ -154,7 +138,7 @@ fn reg_match<'a>(pattern: &MatchType, input_line: &'a str) -> (bool, Option<&'a 
             }
             return (false, None);
         }
-        MatchType::Str(p, Varient::Plus) | MatchType::Str(p, Varient::PlusConfined) => {
+        MatchType::Str(p, Varient::Plus) => {
             if input_line.contains(p) {
                 let x = input_line.split_once(p).unwrap();
                 for (i, c) in x.1.chars().enumerate() {

@@ -4,7 +4,6 @@ pub(crate) enum Varient {
     End,
     None,
     Plus,
-    PlusConfined,
 }
 
 #[derive(Debug, PartialEq)]
@@ -61,11 +60,7 @@ pub(crate) fn get_match_type<'a>(pattern: &'a str) -> Option<(MatchType, Option<
             i += 1;
         }
         if s.get(1..2).unwrap_or("") == "+" {
-            if let None = s.get(2..) {
-                varient = Varient::Plus;
-            } else {
-                varient = Varient::PlusConfined;
-            }
+            varient = Varient::Plus;
             i += 1;
         }
         return match s.chars().next() {
