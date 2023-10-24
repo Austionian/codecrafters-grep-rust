@@ -164,6 +164,7 @@ fn reg_match<'a>(pattern: &MatchType, input_line: &'a str) -> (bool, Option<&'a 
             }
             return (true, Some(input_line));
         }
+        MatchType::Any => return (true, input_line.get(1..)),
         _ => unimplemented!(),
     }
 }

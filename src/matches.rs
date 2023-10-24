@@ -17,6 +17,7 @@ pub(crate) enum MatchType<'a> {
         negated: bool,
         varient: Varient,
     },
+    Any,
 }
 
 // impl MatchType<'_> {
@@ -43,6 +44,10 @@ pub(crate) enum MatchType<'a> {
 pub(crate) fn get_match_type<'a>(pattern: &'a str) -> Option<(MatchType, Option<&'a str>)> {
     if pattern.is_empty() {
         return None;
+    }
+
+    if &pattern[0..1] == "." {
+        return Some((MatchType::Any, pattern.get(1..)));
     }
 
     let mut varient = Varient::None;
