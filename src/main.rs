@@ -1,175 +1,180 @@
+mod matches;
+
+use matches::{get_match_type, MatchType, Varient};
 use std::env;
 use std::io;
 use std::process;
 
-fn string_match<'a>(
-    pattern: &'a str,
-    input_line: &'a str,
-) -> (bool, Option<&'a str>, Option<&'a str>, Option<usize>) {
-    let end_condition = pattern.split_at(pattern.len() - 1).1 == "$";
-    if end_condition {
-        let pattern = pattern.split_at(pattern.len() - 1).0;
-        if input_line.contains(pattern) {
-            if !input_line.split_once(pattern).unwrap().1.is_empty() {
-                return (
-                    false,
-                    pattern.get(pattern.len()..),
-                    input_line.get(pattern.len()..),
-                    None,
-                );
-            }
-            return (
-                true,
-                Some(""),
-                input_line.get(pattern.len()..),
-                input_line.starts_with(pattern).then(|| 0),
-            );
-        } else {
-            return (
-                false,
-                pattern.get(pattern.len()..),
-                input_line.get(pattern.len()..),
-                None,
-            );
-        }
-    } else {
-        if input_line.contains(&pattern) {
-            return (
-                true,
-                pattern.get(pattern.len()..),
-                input_line.get(pattern.len()..),
-                input_line.starts_with(pattern).then(|| 0),
-            );
-        } else {
-            return (
-                false,
-                pattern.get(pattern.len()..),
-                input_line.get(pattern.len()..),
-                None,
-            );
-        }
-    }
-}
-
-fn reg_match<'a>(
-    pattern: &'a str,
-    input_line: &'a str,
-) -> (bool, Option<&'a str>, Option<&'a str>, Option<usize>) {
-    if let Some(s) = pattern.strip_prefix('\\') {
-        match s.chars().next() {
-            Some('d') => {
-                let mut matched = false;
-                let mut idx = 0;
-                for (i, c) in input_line.chars().enumerate() {
-                    if c.is_digit(10) {
-                        idx = i;
-                        matched = true;
-                        break;
-                    }
+fn reg_match<'a>(pattern: &MatchType, input_line: &'a str) -> (bool, Option<&'a str>) {
+    match pattern {
+        MatchType::Word(Varient::Start) => (
+            input_line.chars().next().unwrap().is_alphanumeric(),
+            input_line.get(1..),
+        ),
+        MatchType::Word(Varient::None) => {
+            for (i, c) in input_line.chars().enumerate() {
+                if c.is_alphanumeric() {
+                    return (true, input_line.get(i + 1..));
                 }
-                (
-                    matched,
-                    pattern.get(2..),
-                    input_line.get(idx + 1..),
-                    Some(idx),
-                )
             }
-            Some('w') => {
-                let mut matched = false;
-                let mut idx = 0;
-                for (i, c) in input_line.chars().enumerate() {
-                    if c.is_digit(10) || c.is_alphabetic() {
-                        idx = i;
-                        matched = true;
-                        break;
-                    }
-                }
-                (
-                    matched,
-                    pattern.get(2..),
-                    input_line.get(idx + 1..),
-                    Some(idx),
-                )
-            }
-            _ => string_match(pattern, input_line),
+            return (false, None);
         }
-    } else {
-        if pattern.chars().next() == Some('[') {
-            let pattern = pattern
-                .strip_prefix('[')
-                .and_then(|rest| rest.strip_suffix(']'))
-                .unwrap();
-
-            if pattern.chars().next() == Some('^') {
-                let pattern = pattern.strip_prefix('^').unwrap();
-                for c in pattern.chars() {
-                    if input_line.contains(c) {
-                        return (
-                            false,
-                            pattern.get(pattern.len() + 3..),
-                            input_line.get(1..),
-                            None,
-                        );
-                    } else {
-                        return (
-                            true,
-                            pattern.get(pattern.len() + 3..),
-                            input_line.get(1..),
-                            Some(0),
-                        );
+        MatchType::Word(Varient::End) => (
+            input_line.chars().last().unwrap().is_alphanumeric(),
+            input_line.get(0..input_line.len() - 1),
+        ),
+        MatchType::Word(Varient::Plus) => {
+            let mut res = false;
+            for (i, c) in input_line.chars().enumerate() {
+                if c.is_alphanumeric() {
+                    res = true;
+                } else {
+                    if res {
+                        return (true, input_line.get(i - 1..));
                     }
                 }
             }
-
+            if res {
+                return (true, None);
+            }
+            return (false, None);
+        }
+        MatchType::Word(Varient::PlusConfined) => {
+            let mut res = false;
+            for (i, c) in input_line.chars().enumerate() {
+                if c.is_alphanumeric() {
+                    res = true;
+                } else {
+                    if res {
+                        return (true, input_line.get(i - 1..));
+                    }
+                }
+            }
+            if res {
+                return (true, None);
+            }
+            return (false, None);
+        }
+        MatchType::Digit(Varient::Start) => (
+            input_line.chars().next().unwrap().is_digit(10),
+            input_line.get(1..),
+        ),
+        MatchType::Digit(Varient::None) => {
+            for (i, c) in input_line.chars().enumerate() {
+                if c.is_digit(10) {
+                    return (true, input_line.get(i + 1..));
+                }
+            }
+            return (false, None);
+        }
+        MatchType::Digit(Varient::End) => (
+            input_line.chars().last().unwrap().is_digit(10),
+            input_line.get(0..input_line.len() - 1),
+        ),
+        MatchType::Digit(Varient::Plus) => {
+            let mut res = false;
+            for (i, c) in input_line.chars().enumerate() {
+                if c.is_digit(10) {
+                    res = true;
+                } else {
+                    if res {
+                        return (true, input_line.get(i - 1..));
+                    }
+                }
+            }
+            if res {
+                return (true, None);
+            }
+            return (false, None);
+        }
+        MatchType::Set {
+            pattern,
+            negated: true,
+            varient: Varient::Start,
+        } => {
+            for c in pattern.chars() {
+                if input_line.chars().next().unwrap() == c {
+                    return (false, None);
+                }
+            }
+            return (true, input_line.get(1..));
+        }
+        MatchType::Set {
+            pattern,
+            negated: false,
+            varient: Varient::Start,
+        } => {
+            for c in pattern.chars() {
+                if input_line.chars().next().unwrap() == c {
+                    return (true, input_line.get(1..));
+                }
+            }
+            return (false, None);
+        }
+        MatchType::Set {
+            pattern,
+            negated: true,
+            varient: Varient::None,
+        } => {
             for c in pattern.chars() {
                 if input_line.contains(c) {
-                    return (
-                        true,
-                        pattern.get(pattern.len() + 2..),
-                        input_line.get(1..),
-                        input_line.starts_with(c).then(|| 0),
-                    );
-                } else {
-                    return (
-                        false,
-                        pattern.get(pattern.len() + 2..),
-                        input_line.get(1..),
-                        None,
-                    );
+                    return (false, None);
                 }
             }
+            return (true, input_line.get(1..));
         }
-        if pattern.chars().next() == Some('^') {
-            let pattern = pattern.strip_prefix('^').unwrap();
-            // check if there's a match and if it's in the first position
-            let (m, _, _, starts_with) = reg_match(pattern, input_line);
-            if m && starts_with.unwrap_or(1) == 0 {
-                return (true, pattern.get(1..), Some(input_line), Some(0));
-            } else {
-                return (false, pattern.get(1..), Some(input_line), None);
+        MatchType::Set {
+            pattern,
+            negated: false,
+            varient: Varient::None,
+        } => {
+            for (i, c) in pattern.chars().enumerate() {
+                if input_line.contains(c) {
+                    return (true, input_line.get(i + 1..));
+                }
             }
+            return (false, None);
         }
-        // Pattern has special chars later on
-        if pattern.contains('\\') {
-            let idx = pattern.chars().position(|c| c == '\\').unwrap();
-            let (character_pattern, rest) = pattern.split_at(idx);
-            if input_line.starts_with(character_pattern) {
-                return (
-                    true,
-                    Some(rest),
-                    input_line.get(character_pattern.len()..),
-                    Some(0),
-                );
-            } else {
-                return (
-                    false,
-                    Some(rest),
-                    input_line.get(character_pattern.len()..),
-                    None,
-                );
+        MatchType::Str(p, Varient::Start) => (input_line.starts_with(p), input_line.get(p.len()..)),
+        MatchType::Str(p, Varient::None) => {
+            if input_line.contains(p) {
+                return (true, Some(input_line.split_once(p).unwrap().1));
             }
+            return (false, None);
         }
-        string_match(pattern, input_line)
+        MatchType::Str(p, Varient::End) => {
+            if input_line.contains(p)
+                && input_line
+                    .split(p)
+                    .collect::<Vec<_>>()
+                    .last()
+                    .is_some_and(|last| last.is_empty())
+            {
+                return (true, None);
+            }
+            return (false, None);
+        }
+        MatchType::Str(p, Varient::Plus) => {
+            let mut res = false;
+            let mut i = 0;
+            let mut x = input_line;
+            loop {
+                if x.contains(p) {
+                    res = true;
+                    let tmp = x.split_once(p).unwrap();
+                    if i == 0 {
+                        x = tmp.1;
+                        i += 1;
+                    } else {
+                        x = tmp.0;
+                    }
+                } else {
+                    break;
+                }
+            }
+            return (res, Some(x));
+        }
+        _ => unimplemented!(),
     }
 }
 
@@ -188,15 +193,36 @@ fn main() {
 
     let mut res = true;
     let mut p = pattern.as_str();
-    let mut i = input_line.as_str();
-    while !p.is_empty() && !i.is_empty() {
-        let (bool, rest_pattern, rest_input, _) = reg_match(p, i);
+    let mut i = input_line.as_str().trim_end();
+    let mut match_queue = Vec::new();
+    // Parse the expression into match types.
+    while let Some((m, p_rest)) = get_match_type(p) {
+        match_queue.push(m);
+        p = p_rest.unwrap_or("");
+    }
+    for mtch in match_queue {
+        let (bool, rest_input) = reg_match(&mtch, i);
+        println!("{} {:?}", bool, rest_input);
         res = res && bool;
-        p = rest_pattern.unwrap_or("");
         i = rest_input.unwrap_or("");
-        if i.is_empty() && !p.is_empty() {
-            res = false;
+        if i == "" {
+            break;
         }
+    }
+    // if m.is_end_varient() && !first && i.is_empty() && !p.is_empty() {
+    //     res = false;
+    // }
+    // while !i.is_empty() {
+    //         let (bool, rest_input) = reg_match(&m, i);
+    //         res = res && bool;
+    //         i = rest_input.unwrap_or("");
+    //         first = false;
+    //     } else {
+    //         break;
+    //     }
+    // }
+    if i.is_empty() && !p.is_empty() {
+        res = false;
     }
     if res {
         println!("pass");
