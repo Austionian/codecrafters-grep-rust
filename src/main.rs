@@ -16,8 +16,7 @@ fn main() {
     let mut input_line = String::new();
     io::stdin().read_line(&mut input_line).unwrap();
 
-    let match_queue = MatchQueue::from(&pattern);
-    let res = match_queue.check(&input_line);
+    let res = MatchQueue::from(&pattern).check(&input_line);
 
     if res {
         println!("pass");
